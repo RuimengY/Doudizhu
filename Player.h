@@ -7,7 +7,16 @@
 class Player
 {
 public:
+    enum Role
+    {
+        PLAYER,
+        LANDLORD
+    };
+
     std::vector<Card> hand;
+    Role role;
+
+    Player(Role r, const std::vector<Card> &initialHand);
 
     void showHand() const;
 };

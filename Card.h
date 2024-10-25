@@ -5,17 +5,12 @@
 #include <vector>
 #include <unordered_map>
 #include <map>
+#include "Game.h"
 
 class Card
 {
 public:
-    // brandmap中存储了所有的牌型以及对应的索引，键是牌型，值是索引(1-54)
     static std::unordered_map<std::string, int> brandMap;
-
-    static const std::vector<std::string> NUMBER;
-    static const std::vector<std::string> COLOUR;
-    static std::vector<std::string> DEFAULT_BRAND;
-
     Card(const std::vector<std::string> &brands);
 
     void sort();

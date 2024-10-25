@@ -4,41 +4,13 @@
 #include <unordered_map>
 #include <map>
 
-// 默认的牌型一共有54张，其中前52张是普通牌，最后两张是大小王
-const std::vector<std::string> Card::NUMBER = {"3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A", "2", "joker"};
-const std::vector<std::string> Card::COLOUR = {"♥", "♠", "♣", "♦"};
-std::vector<std::string> Card::DEFAULT_BRAND(54);
-
-// 初始化默认的牌型
-static void initializeDefaultBrand()
-{
-    Card::DEFAULT_BRAND[52] = "小王";
-    Card::DEFAULT_BRAND[53] = "大王";
-    for (int i = 0; i < 52; ++i)
-    {
-        Card::DEFAULT_BRAND[i] = Card::COLOUR[i % 4] + Card::NUMBER[i / 4];
-    }
-
-    // 填充哈希表
-    for (int i = 0; i < 54; ++i)
-    {
-        Card::brandMap[Card::DEFAULT_BRAND[i]] = i;
-    }
-}
-
 // 在接收到一副牌之后将牌对应成相应的数组序列
 // 其中输入每张牌应该是例如"♠4","♣5"的形式
 Card::Card(const std::vector<std::string> &brands)
 {
-    // 下面的函数为什么不能在Game.cpp当中执行?
-    if (Card::DEFAULT_BRAND[0].empty())
-    {
-        initializeDefaultBrand();
-    }
-
     brandLength = brands.size();
     brandSize.resize(brandLength); // brandSize是指牌的张数
-
+    brandMap = Game::brandMap;     // 将Game中的brandMap赋值给Card中的brandMap
     for (int i = 0; i < brandLength; ++i)
     {
         // 如果输入的牌不在哈希表中，说明输入的牌型错误
@@ -355,7 +327,7 @@ std::string Card::getBrandByIndex(int index)
     {
         return "大王";
     }
-    return COLOUR[index % 4] + NUMBER[index / 4];
+    return Game::DEFAULT_BRAND[index];
 }
 
 int Card::getBrandSize(const std::string &brand)
