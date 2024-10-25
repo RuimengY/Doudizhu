@@ -1,24 +1,24 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
+#include <string>
 #include <vector>
-#include "Card.h"
+#include "Brand.h" // 假设Brand类在Brand.h中定义
 
 class Player
 {
 public:
-    enum Role
-    {
-        PLAYER,
-        LANDLORD
-    };
+    Player(const std::string &name);
 
-    std::vector<Card> hand;
-    Role role;
+    void addCard(const std::string &card);
+    void removeCard(const std::string &card);
+    bool canPlayCard(const std::string &card) const;
 
-    Player(Role r, const std::vector<Card> &initialHand);
+    const std::vector<std::string> &getHand() const;
 
-    void showHand() const;
+private:
+    std::string name;
+    std::vector<std::string> hand;
 };
 
 #endif // PLAYER_H
