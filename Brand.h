@@ -9,25 +9,26 @@ class Brand
 {
 public:
     Brand(const std::vector<std::string> &cards);
-    int Brand::getBrandIndex(const std::string &brand);
-    void Brand::initializeBrandNum();
+    int getBrandIndex(const std::string &brand);
+    void initializeBrandNum();
     void sort();
 
-    bool Brand::canPlay(Brand &brand);
+    bool canPlay(Brand &enemyBrand);
 
-    std::pair<int, int> Brand::updateType();
-    bool Brand::judgeFixedType(int len, int seriesNum, int repeatNum) const;
-    bool Brand::isSeries(const std::vector<int> &a) const;
-    bool Brand::isRepeat(int repeatNum) const;
-    int Brand::getCardValue() const;
+    std::pair<int, int> updateType();
+    bool judgeFixedType(int len, int seriesNum, int repeatNum) const;
+    bool isSeries(const std::vector<int> &a) const;
+    bool isRepeat(int repeatNum) const;
+    int getCardValue() const;
 
-    bool Brand::isStraight() const;
-    bool Brand::isConsecutivePairs() const;
-    bool Brand::isPlane() const;
-    int Brand::isPlaneWithWings() const;
+    bool isStraight() const;
+    bool isConsecutivePairs() const;
+    bool isPlane() const;
+    int isPlaneWithWings() const;
 
 private:
-    std::vector<Card> cardList; // cardList是一个牌组，里面存储了所有的牌(Card类)
+    std::vector<std::string> cards; // cards是一个字符串数组，里面存储了所有的牌(字符串)
+    std::vector<Card> cardList;     // cardList是一个牌组，里面存储了所有的牌(Card类)
 
     int brandLength = 0; // brandLength指一个牌组的长度
 

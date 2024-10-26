@@ -1,41 +1,19 @@
 #include "Brand.h"
 #include "card.h"
+#include "Game.h"
 #include <algorithm>
 #include <iostream>
 #include <unordered_map>
 #include <map>
 
-Brand::Brand(const std::vector<std::string> &cards)
+Brand::Brand(const std::vector<std::string> &cards) : cards(cards)
 {
     brandLength = cards.size();
     brandSize.resize(brandLength); // brandSize是指牌的张数
-    brandMap = Card::cardMap;      // 将Card中的哈希表(对应相应的键字符串和1-54赋值给Card中的brandMap
+    brandMap = Game::cardMap;      // 将Game中的哈希表(对应相应的键字符串和1-54赋值给Card中的brandMap
     for (const auto &cardStr : cards)
     {
         cardList.emplace_back(cardStr);
-    }
-}
-// 在接收到一副牌之后将牌对应成相应的数组序列
-// 其中输入每张牌应该是例如"♠4","♣5"的形式
-Brand::Brand(const std::vector<std::string> &brands)
-{
-    brandLength = brands.size();
-    brandSize.resize(brandLength); // brandSize是指牌的张数
-    brandMap = Card::cardMap;      // 将Game中的brandMap赋值给Card中的brandMap
-    for (int i = 0; i < brandLength; ++i)
-    {
-        // 如果输入的牌不在哈希表中，说明输入的牌型错误
-        while (true)
-        {
-            if (getBrandIndex(brands[i]) != -1)
-            {
-                // 将输入的每一张牌对应到相应的数字(1-54)
-                brandSize[i] = getBrandIndex(brands[i]);
-                break;
-            }
-            std::cout << "牌型输入错误" << std::endl;
-            return;
-        }
     }
     initializeBrandNum();
     sort();
@@ -69,11 +47,10 @@ void Brand::sort()
     std::sort(brandSize.begin(), brandSize.end());
 }
 
-bool Brand::canPlay(Brand &brand)
+bool Brand::canPlay(Brand &enemyBrand)
 {
-
     std::pair<int, int> thisCard = updateType();
-    std::pair<int, int> cardCard = brand.updateType();
+    std::pair<int, int> cardCard = enemyBrand.updateType();
     if (thisCard.first == -1 || cardCard.first == -1)
     {
         std::cout << "不能这么出牌，请重新出牌" << std::endl;
@@ -90,11 +67,7 @@ bool Brand::canPlay(Brand &brand)
         std::cout << "牌太小，不能出牌" << std::endl;
         return false;
     }
-    else
-    {
-        std::cout << "玩家可以出牌" << std::endl;
-        return true;
-    }
+    return true;
 }
 
 std::pair<int, int> Brand::updateType()
