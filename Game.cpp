@@ -267,9 +267,3 @@ bool Game::playAgain()
     std::cin >> choice;
     return choice == 'y' || choice == 'Y';
 }
-
-int main()
-{
-    Game game;
-    return 0;
-}

@@ -6,30 +6,38 @@
 #include <unordered_map>
 #include <map>
 
-Brand::Brand(const std::vector<std::string> &cards) : cards(cards)
+const std::vector<std::string> NUMBER = {"3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A", "2", "joker"};
+const std::vector<std::string> COLOUR = {"♥", "♠", "♣", "♦"};
+Brand::Brand(const std::vector<std::string> &cards)
 {
     brandLength = cards.size();
     brandSize.resize(brandLength); // brandSize是指牌的张数
-    brandMap = Game::cardMap;      // 将Game中的哈希表(对应相应的键字符串和1-54赋值给Card中的brandMap
+    initializeBrandMap();
     for (const auto &cardStr : cards)
     {
         cardList.emplace_back(cardStr);
     }
+    for (int i = 0; i < brandLength; ++i)
+    {
+        brandSize[i] = brandMap[cardList[i]];
+    }
     initializeBrandNum();
     sort();
 }
-
-// 使用哈希表查找牌型索引
-// 不用数组索引直接找的原因：有可能输入的牌是错误的，即没有这种牌型
-// 而且在数组中查找的时间复杂度为O(n)，而在哈希表中查找的时间复杂度为O(1)
-int Brand::getBrandIndex(const std::string &brand)
+void Brand::initializeBrandMap()
 {
-    auto it = brandMap.find(brand);
-    if (it != brandMap.end())
+    if (brandMap.size() != 0)
+        return;
+    int index = 1;
+    for (const auto &number : NUMBER)
     {
-        return it->second;
+        for (const auto &colour : COLOUR)
+        {
+            brandMap[colour + number] = index++;
+        }
     }
-    return -1;
+    brandMap["小王"] = 53;
+    brandMap["大王"] = 54;
 }
 
 void Brand::initializeBrandNum()
@@ -47,10 +55,10 @@ void Brand::sort()
     std::sort(brandSize.begin(), brandSize.end());
 }
 
-bool Brand::canPlay(Brand &enemyBrand)
+bool Brand::canPlay(Brand &tableBrand)
 {
     std::pair<int, int> thisCard = updateType();
-    std::pair<int, int> cardCard = enemyBrand.updateType();
+    std::pair<int, int> cardCard = tableBrand.updateType();
     if (thisCard.first == -1 || cardCard.first == -1)
     {
         std::cout << "不能这么出牌，请重新出牌" << std::endl;
@@ -72,8 +80,6 @@ bool Brand::canPlay(Brand &enemyBrand)
 
 std::pair<int, int> Brand::updateType()
 {
-    std::pair<int, int> result;
-
     // 鬼牌(两张牌，且一张是小王，一张是大王)
     if (brandLength == 2 && brandMap.find("小王") != brandMap.end() && brandMap.find("大王") != brandMap.end())
     {

@@ -1,44 +1,37 @@
 #ifndef BRAND_H
 #define BRAND_H
 
-#include <string>
 #include <vector>
-#include "Card.h"
+#include <string>
+#include <unordered_map>
 
 class Brand
 {
 public:
     Brand(const std::vector<std::string> &cards);
-    int getBrandIndex(const std::string &brand);
+    void initializeBrandMap();
+    bool canPlay(Brand &enemyBrand);
+    std::pair<int, int> updateType();
+    std::pair<int, int> getCardType();
+    int getCardValue() const;
+    bool isSeries(const std::vector<int> &a) const;
+    bool isRepeat(int repeatNum) const;
+    bool isPlane() const;
+    bool isConsecutivePairs() const;
+    bool isStraight() const;
+    int isPlaneWithWings() const;
+    bool judgeFixedType(int length, int num, int times) const;
+
+private:
     void initializeBrandNum();
     void sort();
 
-    bool canPlay(Brand &enemyBrand);
-
-    std::pair<int, int> updateType();
-    bool judgeFixedType(int len, int seriesNum, int repeatNum) const;
-    bool isSeries(const std::vector<int> &a) const;
-    bool isRepeat(int repeatNum) const;
-    int getCardValue() const;
-
-    bool isStraight() const;
-    bool isConsecutivePairs() const;
-    bool isPlane() const;
-    int isPlaneWithWings() const;
-
-private:
-    std::vector<std::string> cards; // cards是一个字符串数组，里面存储了所有的牌(字符串)
-    std::vector<Card> cardList;     // cardList是一个牌组，里面存储了所有的牌(Card类)
-
-    int brandLength = 0; // brandLength指一个牌组的长度
-
-    std::vector<int> brandSize; // brandSize是牌组中每一个输入牌的大小(1-54)
-
-    // brandNum是一个哈希表，键是牌的大小(1-13)，值是牌的数量
-    std::unordered_map<int, int> brandNum;
-
-    int type = -1; // type指牌型
-    static std::unordered_map<std::string, int> brandMap;
+    std::pair<int, int> result;                    // 牌型和关键值
+    size_t brandLength;                            // 牌的数量
+    std::vector<int> brandSize;                    // 每张牌对应的大小(1-54)
+    std::unordered_map<std::string, int> brandMap; // 牌型哈希表(某种牌型和对应的数字)
+    std::unordered_map<int, int> brandNum;         // 牌的数量哈希表(某个数字和对应的数量)
+    std::vector<std::string> cardList;             // 字符串牌型
 };
 
 #endif // BRAND_H
