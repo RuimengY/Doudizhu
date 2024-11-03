@@ -5,6 +5,9 @@
 #include <random>
 #include <ctime>
 #include <iostream>
+
+using namespace std;
+
 std::unordered_map<std::string, int> Game::cardMap;
 
 const std::vector<std::string> NUMBER = {"3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A", "2", "joker"};
@@ -12,13 +15,29 @@ const std::vector<std::string> COLOUR = {"♥", "♠", "♣", "♦"};
 
 Game::Game() : DEFAULT_BRAND(54), brands(54), player(), computer()
 {
-    if (cardMap.empty())
-    {
-        initializeCardMap();
-    }
+
+    initializeCardMap();
+
+    initializeDefaultBrand(DEFAULT_BRAND, brands);
+
     shuffleDeck();
+    initialPage();
     dealCards();
     playGame();
+}
+void Game::initialPage()
+{
+    std::cout << "欢迎来到斗地主游戏!" << std::endl;
+    std::cout << "游戏规则: " << std::endl;
+    std::cout << "1. 一副牌有54张，包括13种点数，4种花色，大小王" << std::endl;
+    std::cout << "2. 一局游戏有3个玩家，其中一个是地主，另外两个是农民" << std::endl;
+    std::cout << "3. 一开始，地主和农民分别获得17张牌，剩下的20张牌作为底牌" << std::endl;
+    std::cout << "4. 地主首先出牌，然后其他玩家依次出牌，直到有一方出完手牌" << std::endl;
+    std::cout << "5. 出牌时，玩家可以选择跳过，或者出一张或多张牌" << std::endl;
+    std::cout << "6. 出牌时，玩家必须出比上家大的牌，或者出炸弹" << std::endl;
+    std::cout << "7. 出牌时，玩家可以选择不出牌，此时会跳过该玩家" << std::endl;
+    std::cout << "8. 出完手牌的玩家获得胜利" << std::endl;
+    std::cout << "祝你好运!" << std::endl;
 }
 void Game::initializeCardMap()
 {
@@ -74,11 +93,11 @@ void Game::dealCards()
         // 分配牌，玩家比电脑多两张
         for (int i = 0; i < N; ++i)
         {
-            if (i < (N - 2) / 2) // 前(N-2)/2张牌给玩家
+            if (i < (N - 2) / 2) // 前(N-2)/2张牌给地主
             {
                 computer.addCard(brands[i]);
             }
-            else // 剩下的(N+2)/2张牌给地主
+            else // 剩下的(N+2)/2张牌给玩家
             {
                 player.addCard(brands[i]);
             }
@@ -107,7 +126,17 @@ void Game::dealCards()
                 computer.addCard(brands[i]);
             }
         }
+        // 存储剩余的牌
+        for (int i = N; i < 54; ++i)
+        {
+            remainingBrands.push_back(brands[i]);
+        }
     }
+    // 对玩家和电脑的手牌进行排序
+    player.sortHand();
+    computer.sortHand();
+    // 打印玩家手牌
+    player.printHand();
 }
 
 void Game::playGame()
@@ -160,20 +189,23 @@ void Game::playGame()
 bool Game::isValidMove(const std::string &str)
 {
     std::vector<std::string> playerHand = player.getHand();
+
+    // 打印手牌
+    player.printHand();
+    // 打印str
+    std::cout << "出的牌: " << str << std::endl;
     // 判断出的牌是否在手牌中
-    auto it = std::find(playerHand.begin(), playerHand.end(), str);
-    if (it == playerHand.end())
+    for (const auto &card : playerHand)
     {
-        return false;
+        if (card == str)
+        {
+            std::cout << "出的牌在手牌内，成功出牌";
+            return true;
+        }
     }
 
-    // 判断出的牌是否在 cardMap 中
-    if (cardMap.find(str) == cardMap.end())
-    {
-        return false;
-    }
-
-    return true;
+    std::cout << "出的牌不在手牌内，请重新出牌: ";
+    return false;
 }
 
 bool Game::isValidHand(const std::vector<std::string> &cards)
@@ -187,26 +219,68 @@ bool Game::isValidHand(const std::vector<std::string> &cards)
 
     return tryBrand.canPlay(TableBrand);
 }
+
+// 定义一个映射表，将中文花色转换为符号
+std::unordered_map<std::string, std::string> cardMap = {
+    {"Red", "♥"},
+    {"Block", "♦"},
+    {"Black", "♠"},
+    {"Flower", "♣"}};
+
+std::string changCards(const std::string &input)
+{
+    // 遍历映射表，查找并替换花色
+    for (const auto &pair : cardMap)
+    {
+        size_t pos = input.find(pair.first);
+        if (pos != std::string::npos)
+        {
+            std::string result = input;
+            result.replace(pos, pair.first.length(), pair.second);
+            std::cout << "替换后的牌: " << result << std::endl;
+            return result;
+        }
+    }
+    return input; // 如果输入不在映射表中，返回原输入
+}
+
+std::vector<std::string> updateCards(std::vector<std::string> &cards)
+{
+    for (auto &card : cards)
+    {
+        card = changCards(card);
+    }
+    return cards;
+}
+
 void Game::playerTurn(std::vector<std::string> &playerHand)
 {
     std::vector<std::string> cards;
     std::string card;
-    std::cout << "请输入你要出的牌（以空格分隔，输入结束后按回车）: ";
+    std::cout << "请输入你要出的牌(用Red,Black,Flower,Block表示花色,输入结束后按回车): ";
     while (std::cin >> card)
     {
-        cards.push_back(card);
+        if (card != " ")
+        {
+            cards.push_back(card);
+        }
         if (std::cin.peek() == '\n')
         {
             break;
         }
     }
+    // 更新牌的花色
+    cards = updateCards(cards);
     // 判断每个元素是否满足条件
     for (const auto &card : cards)
     {
         if (!isValidMove(card))
         {
-            std::cout << "存在单张牌不在手牌内，请重新出牌: ";
             return;
+        }
+        else
+        {
+            std::cout << "存在单张牌在手牌内，成功出牌" << std::endl;
         }
     }
 
