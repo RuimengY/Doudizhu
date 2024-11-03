@@ -151,35 +151,32 @@ void Game::playGame()
     // 如果是，则重新开始游戏
     // 如果不是，则退出游戏
     srand(static_cast<unsigned int>(time(0)));
-    std::vector<std::string> playerHand, computerHand;
 
     bool gameRunning = true;
     while (gameRunning)
     {
-        playerHand = player.getHand();
-        computerHand = computer.getHand();
 
         bool playerIsLandLord = (player.getName() == "LandLord");
 
-        while (!isGameOver(playerHand, computerHand))
+        while (!isGameOver())
         {
             if (playerIsLandLord)
             {
-                playerTurn(playerHand);
-                if (isGameOver(playerHand, computerHand))
+                playerTurn();
+                if (isGameOver())
                     break;
-                computerTurn(computerHand);
+                computerTurn();
             }
             else
             {
-                computerTurn(computerHand);
-                if (isGameOver(playerHand, computerHand))
+                computerTurn();
+                if (isGameOver())
                     break;
-                playerTurn(playerHand);
+                playerTurn();
             }
         }
 
-        printResult(playerHand, computerHand);
+        printResult();
         gameRunning = playAgain();
     }
 
@@ -189,7 +186,6 @@ void Game::playGame()
 bool Game::isValidMove(const std::string &str)
 {
     std::vector<std::string> playerHand = player.getHand();
-
     // 打印手牌
     player.printHand();
     // 打印str
@@ -253,7 +249,7 @@ std::vector<std::string> updateCards(std::vector<std::string> &cards)
     return cards;
 }
 
-void Game::playerTurn(std::vector<std::string> &playerHand)
+void Game::playerTurn()
 {
     std::vector<std::string> cards;
     std::string card;
@@ -293,6 +289,7 @@ void Game::playerTurn(std::vector<std::string> &playerHand)
     // 更新拍桌子上的牌
     currentBrand = cards;
     // 将出的每一张牌从手牌中删除
+    std::vector<std::string> playerHand = player.getHand();
     for (const auto &card : cards)
     {
         playerHand.erase(std::remove(playerHand.begin(), playerHand.end(), card), playerHand.end());
@@ -306,24 +303,82 @@ void Game::playerTurn(std::vector<std::string> &playerHand)
     // 更新手牌
     player.setHand(playerHand);
 }
-
-void Game::computerTurn(std::vector<std::string> &computerHand)
+void Game::computerTurn()
 {
-    /*
-    // 简单的电脑出牌逻辑，随机出一张牌
-    int card = computerHand[rand() % computerHand.size()];
-    std::cout << "电脑出了牌: " << card << std::endl;
-    computerHand.erase(std::remove(computerHand.begin(), computerHand.end(), card), computerHand.end());
-    */
+}
+/*
+void Game::computerTurn()
+{
+    std::vector<std::string> computerHand = computer.getHand();
+    // 将手牌分类
+    unordered_map<int, int> handMap;
+    for (int card : computerHand)
+    {
+        handMap[card]++;
+    }
+
+    vector<vector<int>> pairs, planes, threeWithPair, threeWithSingle, singles;
+    vector<int> sequences;
+    classifyHand(handMap, pairs, planes, sequences, threeWithPair, threeWithSingle, singles);
+
+    vector<int> chosenCards;
+
+    // 选择合适的牌型出牌
+    if (!currentBrand.empty())
+    {
+        // 根据当前牌型选择合适的牌
+        // 这里可以根据游戏规则选择合适的牌型
+        // 示例：如果当前牌型是单牌，则选择单牌
+        if (currentBrand.size() == 1)
+        {
+            if (!singles.empty())
+            {
+                chosenCards = singles.back();
+                singles.pop_back();
+            }
+        }
+        // 其他牌型的选择逻辑可以根据游戏规则补充
+    }
+    else
+    {
+        // 如果当前没有牌型，则选择最小的单牌
+        if (!singles.empty())
+        {
+            chosenCards = singles.back();
+            singles.pop_back();
+        }
+    }
+
+    // 更新手牌
+    for (int card : chosenCards)
+    {
+        computerHand.erase(std::remove(computerHand.begin(), computerHand.end(), card), computerHand.end());
+    }
+
+    // 输出电脑出的牌
+    std::cout << "电脑出了牌: ";
+    for (int card : chosenCards)
+    {
+        std::cout << card << " ";
+    }
+    std::cout << std::endl;
+
+    // 更新当前牌型
+    currentBrand = chosenCards;
 }
 
-bool Game::isGameOver(const std::vector<std::string> &playerHand, const std::vector<std::string> &computerHand)
+*/
+
+bool Game::isGameOver()
 {
+    std::vector<std::string> playerHand = player.getHand();
+    std::vector<std::string> computerHand = computer.getHand();
     return playerHand.empty() || computerHand.empty();
 }
 
-void Game::printResult(const std::vector<std::string> &playerHand, const std::vector<std::string> &computerHand)
+void Game::printResult()
 {
+    std::vector<std::string> playerHand = player.getHand();
     if (playerHand.empty())
     {
         std::cout << "你赢了!" << std::endl;
