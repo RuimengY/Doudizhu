@@ -14,6 +14,12 @@ void Player::addCard(const std::string &card)
     hand.push_back(card);
 }
 
+void Player::sort()
+{
+    Brand brand(hand); // 借助Brand中的排序函数对手牌进行排序
+    hand = brand.getCardList();
+}
+
 void Player::removeCard(const std::vector<std::string> &cards)
 {
     for (const auto &card : cards)
@@ -29,13 +35,16 @@ void Player::removeCard(const std::vector<std::string> &cards)
         }
     }
 }
-const std::vector<std::string> &Player::getHand() const // 查看自己的手牌
+
+std::vector<std::string> Player::getHand() const // 查看自己的手牌
 {
     return hand;
 }
 
+// 打印手牌
 void Player::printHand() const
 {
+    std::cout << name << "'s hand: ";
     for (const auto &card : hand)
     {
         std::cout << card << " ";
@@ -45,7 +54,8 @@ void Player::printHand() const
 
 void Player::setHand(const std::vector<std::string> &hand)
 {
-    this->hand = hand;
+    Brand brand(hand); // 借助Brand中的排序函数对手牌进行排序
+    this->hand = brand.getCardList();
 }
 
 std::string Player::getName() const

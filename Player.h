@@ -15,11 +15,12 @@ public:
     void addCard(const std::string &card);
     void removeCard(const std::vector<std::string> &cards);
 
-    const std::vector<std::string> &getHand() const;
+    std::vector<std::string> getHand() const;
     void printHand() const;
     void setName(const std::string &name);
     void setHand(const std::vector<std::string> &hand);
     std::string getName() const;
+    void sort(); // 将牌按照大小排序
 
 private:
     std::string name;

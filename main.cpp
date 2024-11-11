@@ -7,7 +7,15 @@
 
 int main()
 {
-    Game game;
+    char choice;
+    do
+    {
+        Game game;
+
+        game.playGame();
+        std::cout << "Do you want to play again? (y/n): ";
+        std::cin >> choice;
+    } while (choice == 'y' || choice == 'Y');
 
     return 0;
 }

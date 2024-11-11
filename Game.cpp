@@ -5,6 +5,7 @@
 #include <random>
 #include <ctime>
 #include <iostream>
+#include <sstream>
 
 using namespace std;
 
@@ -16,14 +17,11 @@ const std::vector<std::string> COLOUR = {"♥", "♠", "♣", "♦"};
 Game::Game() : DEFAULT_BRAND(54), brands(54), player(), computer()
 {
 
-    initializeCardMap();
+    initializeCardMap();                           // 初始化键值对
+    initializeDefaultBrand(DEFAULT_BRAND, brands); // 初始化手牌
 
-    initializeDefaultBrand(DEFAULT_BRAND, brands);
-
-    shuffleDeck();
-    initialPage();
-    dealCards();
-    playGame();
+    initialPage(); // 欢迎界面
+    dealCards();   // 发牌
 }
 void Game::initialPage()
 {
@@ -41,7 +39,7 @@ void Game::initialPage()
 }
 void Game::initializeCardMap()
 {
-    int index = 1;
+    int index = 0;
     for (const auto &number : NUMBER)
     {
         for (const auto &colour : COLOUR)
@@ -49,8 +47,8 @@ void Game::initializeCardMap()
             cardMap[colour + number] = index++;
         }
     }
-    cardMap["小王"] = 53;
-    cardMap["大王"] = 54;
+    cardMap["小王"] = 52;
+    cardMap["大王"] = 53;
 }
 void Game::initializeDefaultBrand(std::vector<std::string> &defaultBrand, std::vector<std::string> &brands)
 {
@@ -69,6 +67,10 @@ void Game::shuffleDeck()
     std::srand(std::time(0));
     std::random_shuffle(Game::brands.begin(), Game::brands.end());
 }
+void Game::setRemainingBrands(const std::vector<std::string> &brands)
+{
+    remainingBrands = brands;
+}
 
 void Game::dealCards()
 {
@@ -76,10 +78,8 @@ void Game::dealCards()
     // 随机选择一个大于40且小于54的偶数作为N
     std::srand(std::time(0));
     int N = 42 + (std::rand() % 7) * 2; // 生成42, 44, 46, 48, 50, 52中的一个
-
     // 洗牌
     shuffleDeck();
-
     // 初始化玩家和地主的手牌容器
     // 询问玩家是否原因成为地主
     std::cout << "是否成为地主？(y/n)" << std::endl;
@@ -107,6 +107,10 @@ void Game::dealCards()
         {
             remainingBrands.push_back(brands[i]);
         }
+        player.sort();
+        computer.sort();
+        Brand brand(remainingBrands);
+        setRemainingBrands(brand.getCardList());
     }
     else
     {
@@ -131,10 +135,11 @@ void Game::dealCards()
         {
             remainingBrands.push_back(brands[i]);
         }
+        player.sort();
+        computer.sort();
+        Brand brand(remainingBrands);
+        setRemainingBrands(brand.getCardList());
     }
-    // 对玩家和电脑的手牌进行排序
-    player.sortHand();
-    computer.sortHand();
     // 打印玩家手牌
     player.printHand();
 }
@@ -153,54 +158,88 @@ void Game::playGame()
     srand(static_cast<unsigned int>(time(0)));
 
     bool gameRunning = true;
-    while (gameRunning)
+
+    bool playerIsLandLord = (player.getName() == "Landlord");
+
+    while (!isGameOver())
     {
-
-        bool playerIsLandLord = (player.getName() == "LandLord");
-
-        while (!isGameOver())
+        // 检查是否需要进入作弊菜单
+        char cheatInput;
+        std::cout << "是否进入作弊菜单？(Y/N): ";
+        std::cin >> cheatInput;
+        if (cheatInput == 'Y' || cheatInput == 'y')
         {
-            if (playerIsLandLord)
-            {
-                playerTurn();
-                if (isGameOver())
-                    break;
-                computerTurn();
-            }
-            else
-            {
-                computerTurn();
-                if (isGameOver())
-                    break;
-                playerTurn();
-            }
+            cheatMenu();
         }
+        if (playerIsLandLord)
+        {
+            lastPlayerCards = playerTurn();
+            std::cout << "玩家的回合结束" << std::endl;
+            if (lastPlayerCards.empty())
+            {
+                currentBrand.clear();
+            }
 
-        printResult();
-        gameRunning = playAgain();
+            if (isGameOver())
+                break;
+
+            // 判断是否是鬼牌或炸弹
+            if (isBombOrJoker(currentBrand))
+            {
+                std::cout << "鬼牌/炸弹大了" << std::endl;
+                currentBrand.clear();
+                recordPlay(lastPlayerCards, {"pass"});
+                continue; // 继续由玩家出牌
+            }
+            std::cout << "电脑的回合" << std::endl;
+            lastOpponentCards = computerTurn();
+            if (isGameOver())
+                break;
+            if (lastOpponentCards.empty())
+                currentBrand.clear();
+            recordPlay(lastPlayerCards, lastOpponentCards);
+        }
+        else
+        {
+            lastOpponentCards = computerTurn();
+            if (lastOpponentCards.empty())
+                currentBrand.clear();
+            if (isGameOver())
+                break;
+
+            // 判断是否是鬼牌或炸弹
+            if (isBombOrJoker(currentBrand))
+            {
+                std::cout << "鬼牌/炸弹大了" << std::endl;
+                currentBrand.clear();
+                recordPlay(lastOpponentCards, {"pass"});
+                continue; // 继续由电脑出牌
+            }
+
+            lastPlayerCards = playerTurn();
+            if (isGameOver())
+                break;
+            if (lastPlayerCards.empty())
+                currentBrand.clear();
+            recordPlay(lastOpponentCards, lastPlayerCards);
+        }
     }
-
-    std::cout << "游戏结束!" << std::endl;
+    printResult();
+    std::cout << "本局游戏结束!" << std::endl;
 }
 
-bool Game::isValidMove(const std::string &str)
+bool Game::isBombOrJoker(const std::vector<std::string> &cards) const
 {
-    std::vector<std::string> playerHand = player.getHand();
-    // 打印手牌
-    player.printHand();
-    // 打印str
-    std::cout << "出的牌: " << str << std::endl;
-    // 判断出的牌是否在手牌中
-    for (const auto &card : playerHand)
+    if (cards.size() == 2 && ((cards[0] == "Joker" && cards[1] == "joker") || (cards[0] == "joker" && cards[1] == "Joker")))
     {
-        if (card == str)
-        {
-            std::cout << "出的牌在手牌内，成功出牌";
-            return true;
-        }
+        return true; // 鬼牌
     }
 
-    std::cout << "出的牌不在手牌内，请重新出牌: ";
+    if (cards.size() == 4 && cards[0] == cards[1] && cards[1] == cards[2] && cards[2] == cards[3])
+    {
+        return true; // 炸弹
+    }
+
     return false;
 }
 
@@ -218,10 +257,12 @@ bool Game::isValidHand(const std::vector<std::string> &cards)
 
 // 定义一个映射表，将中文花色转换为符号
 std::unordered_map<std::string, std::string> cardMap = {
-    {"Red", "♥"},
-    {"Block", "♦"},
-    {"Black", "♠"},
-    {"Flower", "♣"}};
+    {"R", "♥"},
+    {"BO", "♦"},
+    {"BA", "♠"},
+    {"F", "♣"},
+    {"joker", "小王"},
+    {"JOKER", "大王"}};
 
 std::string changCards(const std::string &input)
 {
@@ -233,14 +274,13 @@ std::string changCards(const std::string &input)
         {
             std::string result = input;
             result.replace(pos, pair.first.length(), pair.second);
-            std::cout << "替换后的牌: " << result << std::endl;
             return result;
         }
     }
     return input; // 如果输入不在映射表中，返回原输入
 }
 
-std::vector<std::string> updateCards(std::vector<std::string> &cards)
+std::vector<std::string> convertCards(std::vector<std::string> &cards)
 {
     for (auto &card : cards)
     {
@@ -248,126 +288,124 @@ std::vector<std::string> updateCards(std::vector<std::string> &cards)
     }
     return cards;
 }
-
-void Game::playerTurn()
+bool Game::isValidPlay(const std::vector<std::string> &cards)
 {
-    std::vector<std::string> cards;
-    std::string card;
-    std::cout << "请输入你要出的牌(用Red,Black,Flower,Block表示花色,输入结束后按回车): ";
-    while (std::cin >> card)
-    {
-        if (card != " ")
-        {
-            cards.push_back(card);
-        }
-        if (std::cin.peek() == '\n')
-        {
-            break;
-        }
-    }
-    // 更新牌的花色
-    cards = updateCards(cards);
-    // 判断每个元素是否满足条件
+    std::vector<std::string> tempHand = player.getHand();
     for (const auto &card : cards)
     {
-        if (!isValidMove(card))
+        auto it = std::find(tempHand.begin(), tempHand.end(), card);
+        if (it == tempHand.end())
         {
-            return;
+            std::cout << "牌 " << card << " 不在手牌中或数量不足，请重新输入。" << std::endl;
+            return false;
         }
         else
         {
-            std::cout << "存在单张牌在手牌内，成功出牌" << std::endl;
+            tempHand.erase(it); // 从临时手牌中移除已找到的牌
         }
     }
-
-    // 判断整个字符串数组是否满足条件
+    // 检查整个牌型是否符合规则
     if (!isValidHand(cards))
     {
-        std::cout << "手牌不符合规则，请重新出牌: ";
-        return;
+        std::cout << "手牌不符合规则，请重新出牌。" << std::endl;
+        return false;
     }
-    // 更新拍桌子上的牌
+    // 从玩家手牌中删除已出的牌
+    player.removeCard(cards);
+    // 更新桌子上的牌的类型
     currentBrand = cards;
-    // 将出的每一张牌从手牌中删除
-    std::vector<std::string> playerHand = player.getHand();
-    for (const auto &card : cards)
-    {
-        playerHand.erase(std::remove(playerHand.begin(), playerHand.end(), card), playerHand.end());
-    }
-    std::cout << "你出了牌: ";
-    for (const auto &card : cards)
-    {
-        std::cout << card << " ";
-    }
-    std::cout << std::endl;
-    // 更新手牌
-    player.setHand(playerHand);
+    return true;
 }
-void Game::computerTurn()
+
+void Game::recordPlay(const std::vector<std::string> &playerCards, const std::vector<std::string> &opponentCards)
 {
-}
-/*
-void Game::computerTurn()
-{
-    std::vector<std::string> computerHand = computer.getHand();
-    // 将手牌分类
-    unordered_map<int, int> handMap;
-    for (int card : computerHand)
+    if (playerCards.empty())
     {
-        handMap[card]++;
+        cardRecorder.recordRound({"pass"}, opponentCards);
     }
-
-    vector<vector<int>> pairs, planes, threeWithPair, threeWithSingle, singles;
-    vector<int> sequences;
-    classifyHand(handMap, pairs, planes, sequences, threeWithPair, threeWithSingle, singles);
-
-    vector<int> chosenCards;
-
-    // 选择合适的牌型出牌
-    if (!currentBrand.empty())
+    else if (opponentCards.empty())
     {
-        // 根据当前牌型选择合适的牌
-        // 这里可以根据游戏规则选择合适的牌型
-        // 示例：如果当前牌型是单牌，则选择单牌
-        if (currentBrand.size() == 1)
+        cardRecorder.recordRound(playerCards, {"pass"});
+    }
+    else
+        cardRecorder.recordRound(playerCards, opponentCards);
+}
+std::vector<std::string> Game::playerTurn()
+{
+    while (true)
+    {
+        // 输出桌子上的牌
+        std::cout << "桌子上的牌: ";
+        for (const auto &card : currentBrand)
         {
-            if (!singles.empty())
+            std::cout << card << " ";
+        }
+        std::cout << std::endl;
+
+        // 输出玩家现有的牌
+        player.printHand();
+        std::vector<std::string> cards;
+        std::cout << "请输入你要出的牌(用R,BA,F,BO,joker,JOKER表示花色,输入-1表示放弃): ";
+
+        std::string input;
+        while (std::cin >> input)
+        {
+            if (input == "-1")
             {
-                chosenCards = singles.back();
-                singles.pop_back();
+                std::cout << "玩家放弃，由电脑继续出牌。" << std::endl;
+                return {};
+            }
+            cards.push_back(input);
+            // 检查是否按下回车键结束输入
+            if (std::cin.peek() == '\n')
+            {
+                break;
             }
         }
-        // 其他牌型的选择逻辑可以根据游戏规则补充
+        // 转化牌的花色
+        cards = convertCards(cards);
+        // 判断是否可以出牌
+        if (isValidPlay(cards))
+        {
+            std::cout << "成功出牌" << std::endl;
+            return cards;
+            break;
+        }
+        else
+        {
+            std::cout << "出牌无效，请重新输入。" << std::endl;
+            // 清空输入缓冲区
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        }
+    }
+}
+
+std::vector<std::string> Game::computerTurn()
+{
+    std::vector<std::string> computerHand = computer.getHand();
+    Brand brand(computerHand);
+
+    std::vector<std::string> chosenCardsStr = brand.chooseCards(currentBrand);
+    if (chosenCardsStr.empty())
+    {
+        std::cout << "电脑跳过了这一轮" << std::endl;
+        return {};
     }
     else
     {
-        // 如果当前没有牌型，则选择最小的单牌
-        if (!singles.empty())
+        // 将这些牌从电脑手牌中删除
+        for (const auto &card : chosenCardsStr)
         {
-            chosenCards = singles.back();
-            singles.pop_back();
+            computerHand.erase(std::remove(computerHand.begin(), computerHand.end(), card), computerHand.end());
         }
+        // 更新电脑手牌
+        computer.setHand(computerHand);
+        // 更新桌子上的牌
+        currentBrand = chosenCardsStr;
+        return chosenCardsStr;
     }
-
-    // 更新手牌
-    for (int card : chosenCards)
-    {
-        computerHand.erase(std::remove(computerHand.begin(), computerHand.end(), card), computerHand.end());
-    }
-
-    // 输出电脑出的牌
-    std::cout << "电脑出了牌: ";
-    for (int card : chosenCards)
-    {
-        std::cout << card << " ";
-    }
-    std::cout << std::endl;
-
-    // 更新当前牌型
-    currentBrand = chosenCards;
 }
-
-*/
 
 bool Game::isGameOver()
 {
@@ -389,10 +427,81 @@ void Game::printResult()
     }
 }
 
-bool Game::playAgain()
+std::vector<std::string> Game::getCurrentBrand() const
 {
+    return currentBrand;
+}
+
+void Game::cheatMenu()
+{
+    std::cout << "作弊菜单" << std::endl;
+    std::cout << "1. 输入T/t显示电脑手牌" << std::endl;
+    std::cout << "2. 输入Y/y显示剩余的牌(没被用的牌)" << std::endl;
+    std::cout << "3. 输入U/u显示记牌器的结果" << std::endl;
+    std::cout << "4. 输入N/n显示已经出了的牌的张数" << std::endl;
+    std::cout << "请选择: ";
     char choice;
-    std::cout << "是否再来一局? (y/n): ";
     std::cin >> choice;
-    return choice == 'y' || choice == 'Y';
+    switch (choice)
+    {
+    case 'T':
+    case 't':
+        computer.printHand();
+        break;
+    case 'Y':
+    case 'y':
+        for (const auto &card : remainingBrands)
+        {
+            std::cout << card << " ";
+        }
+        std::cout << std::endl;
+        break;
+    case 'U':
+    case 'u':
+        std::cout << "记牌器结果：" << std::endl;
+        if (player.getName() == "Landlord")
+        {
+            for (const auto &round : cardRecorder.getRounds())
+            {
+                std::cout << "玩家出牌：";
+                for (const auto &card : round.first)
+                {
+                    std::cout << card << " ";
+                }
+                std::cout << " | 对手出牌：";
+                for (const auto &card : round.second)
+                {
+                    std::cout << card << " ";
+                }
+                std::cout << std::endl;
+            }
+        }
+        else
+        {
+            for (const auto &round : cardRecorder.getRounds())
+            {
+                std::cout << "对手出牌：";
+                for (const auto &card : round.first)
+                {
+                    std::cout << card << " ";
+                }
+                std::cout << " | 玩家出牌：";
+                for (const auto &card : round.second)
+                {
+                    std::cout << card << " ";
+                }
+                std::cout << std::endl;
+            }
+        }
+        break;
+    case 'N':
+    case 'n':
+        std::cout << "已经出了的牌的张数：" << std::endl;
+        cardRecorder.getCardCountForRound();
+        cardRecorder.printCardCount();
+        break;
+    default:
+        std::cout << "无效选择" << std::endl;
+        break;
+    }
 }
